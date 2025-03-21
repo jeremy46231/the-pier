@@ -148,10 +148,10 @@ services:
       GOOGLE_DRIVE_PICKER_CLIENT_ID: "$GOOGLE_DRIVE_PICKER_CLIENT_ID"
       GOOGLE_DRIVE_PICKER_APP_ID: "$GOOGLE_DRIVE_PICKER_APP_ID"
       #Chat
-      MATRIX_API_URI: http://synapse:8008/
-      MATRIX_PUBLIC_URI: http://matrix.workadventure.localhost
-      MATRIX_ADMIN_USER: admin
-      MATRIX_ADMIN_PASSWORD: MySecretPassword
+      MATRIX_API_URI: ""
+      MATRIX_PUBLIC_URI: ""
+      MATRIX_ADMIN_USER: ""
+      MATRIX_ADMIN_PASSWORD: ""
       MATRIX_DOMAIN: matrix.workadventure.localhost
       # oEmbed providers
       EMBEDLY_KEY: "$EMBEDLY_KEY"
@@ -457,6 +457,8 @@ services:
   synapse:
     image: matrixdotorg/synapse:v1.115.0
     entrypoint: /data/start.sh
+    profiles:
+      - do-not-start
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.matrix.rule=Host(`matrix.workadventure.localhost`)"
