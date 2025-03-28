@@ -123,6 +123,9 @@ services:
       - MATRIX_ADMIN_USER
       - MATRIX_ADMIN_PASSWORD
       - MATRIX_DOMAIN
+    ports:
+      - "9702:3000"
+      - "9706:3001"
     labels:
       - traefik.enable=true
 
