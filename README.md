@@ -10,6 +10,10 @@ Live demo [here](https://play.staging.workadventu.re/@/tcm/workadventure/wa-vill
 WorkAdventure is a web-based collaborative workspace presented in the form of a
 16-bit video game.
 
+We plan to make our fork of WorkAdventure an awesome hangout & work space for Hack Clubbers
+
+This will be used for one of the next Big HQ Projects™!
+
 In WorkAdventure you can move around your office and talk to your colleagues (using a video-chat system, triggered when you approach someone).
 
 See more features for your virtual office: https://workadventu.re/virtual-office
@@ -46,7 +50,7 @@ Install Docker and clone this repository.
 Run:
 
 ```
-cp .env.template .env
+cp .env.template .env # Make sure to change the secret key to something random, otherwise containers might hang.
 docker-compose up
 ```
 
@@ -69,6 +73,8 @@ $ docker-compose -f docker-compose.yaml -f docker-compose-oidc.yaml up
 ```
 
 (Test user is "User1" and his password is "pwd")
+
+This is potentially a pathway to implement Sign in with Slack
 
 
 ### Troubleshooting
