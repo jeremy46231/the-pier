@@ -5,7 +5,7 @@
 
 Live demo [here](https://play.staging.workadventu.re/@/tcm/workadventure/wa-village).
 
-# WorkAdventure
+# WorkAdventure (THE PIER / HACKCLUB EDITION)
 
 WorkAdventure is a web-based collaborative workspace presented in the form of a
 16-bit video game.
