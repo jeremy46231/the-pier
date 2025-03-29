@@ -5,8 +5,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.port=8080"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.test`)"
       - "traefik.http.routers.traefik.service=api@internal"
-      - "traefik.http.routers.traefik.rule=HostRegexp(`{domain:.*}`) && PathPrefix(`/traefik/`)"
     command:
       - --log.level=${LOG_LEVEL}
       - --providers.docker
