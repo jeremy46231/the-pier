@@ -25,3 +25,7 @@ synapse/homeserver.yaml
 synapse/media_store/*
 
 .vscode/settings.json
+
+compose.yml
+docker-compose.yaml
+docker-compose.yml
