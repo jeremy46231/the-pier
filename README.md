@@ -50,6 +50,7 @@ Install Docker and clone this repository.
 Run:
 
 ```
+cp docker-compose-dev.yaml compose.yml
 cp .env.template .env # Make sure to change the secret key to something random, otherwise containers might hang.
 docker-compose up
 ```
