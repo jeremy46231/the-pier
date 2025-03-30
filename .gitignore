@@ -12,6 +12,7 @@ _
 *.code-workspace
 /install.lock
 .vscode/extensions.json
+**/dist/*
 
 # Helm
 # Chart dependencies

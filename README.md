@@ -50,8 +50,8 @@ Install Docker and clone this repository.
 Run:
 
 ```
-cp .env.template .env # Make sure to change the secret key to something random, otherwise containers might hang.
-docker-compose up
+cp .env.template .env
+COMPOSE_DOCKER_CLI_BUILD=1 docker-compose up --watch
 ```
 
 The environment will start.
