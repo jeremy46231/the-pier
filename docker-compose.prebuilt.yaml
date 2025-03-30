@@ -33,13 +33,7 @@ services:
     restart: ${RESTART_POLICY}
 
   play:
-    build:
-      context: .
-      dockerfile: play/Dockerfile
-    develop:
-      watch:
-        - action: rebuild
-          path: .
+    image: thecodingmachine/workadventure-play:${VERSION}
     environment:
       - DEBUG_MODE
       - JITSI_URL
@@ -164,9 +158,7 @@ services:
       - traefik.http.routers.room-api.tls.certresolver=myresolver
     restart: ${RESTART_POLICY}
   back:
-    build:
-      context: .
-      dockerfile: back/Dockerfile
+    image: thecodingmachine/workadventure-back:${VERSION}
     environment:
       - PLAY_URL=https://${DOMAIN}
       - SECRET_JITSI_KEY
@@ -215,9 +207,7 @@ services:
     restart: ${RESTART_POLICY}
 
   uploader:
-    build:
-      context: .
-      dockerfile: uploader/Dockerfile
+    image: thecodingmachine/workadventure-uploader:${VERSION}
     environment:
       - UPLOADER_URL=https://${DOMAIN}/uploader
       #AWS
@@ -278,9 +268,7 @@ services:
     restart: ${RESTART_POLICY}
 
   map-storage:
-    build:
-      context: .
-      dockerfile: map-storage/Dockerfile
+    image: thecodingmachine/workadventure-map-storage:${VERSION}
     environment:
       API_URL: back:50051
       PROMETHEUS_AUTHORIZATION_TOKEN: "$PROMETHEUS_AUTHORIZATION_TOKEN"
