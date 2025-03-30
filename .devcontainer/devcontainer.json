@@ -1,0 +1,3 @@
+{
+  "postCreateCommand": "cp .env.template .env && sed -i \"s|^DOMAIN=.*|DOMAIN=${CODESPACE_NAME}-443.app.github.dev|\" .env"
+}

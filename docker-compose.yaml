@@ -3,15 +3,12 @@ services:
   reverse-proxy:
     image: traefik:v2.11
     labels:
-      - "traefik.enable=true"
       - "traefik.port=8080"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.test`)"
       - "traefik.http.routers.traefik.service=api@internal"
     command:
       - --log.level=${LOG_LEVEL}
       - --providers.docker
       - --providers.docker.exposedbydefault=false
-      - --api.insecure=true
       # Entry points
       - --entryPoints.web.address=:80
       - --entrypoints.web.http.redirections.entryPoint.to=websecure
@@ -42,7 +39,7 @@ services:
     develop:
       watch:
         - action: rebuild
-          path: .
+          path: play
     environment:
       - DEBUG_MODE
       - JITSI_URL

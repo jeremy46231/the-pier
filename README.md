@@ -52,6 +52,9 @@ Run:
 ```
 cp .env.template .env
 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose up --watch
+
+# if anything weird happens, you can stop docker:
+docker-compose down
 ```
 
 The environment will start.
