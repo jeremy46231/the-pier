@@ -31,11 +31,17 @@ We support 2 ways to set up a production environment:
 
 Please check the [Setting up a production environment](docs/others/self-hosting/install.md) guide for more information.
 
-> [!NOTE]
-> WorkAdventure also provides a [hosted version](https://workadventu.re) of the application. Using the hosted version is 
-> the easiest way to get started and helps us to keep the project alive.
+## Setting up a development environment on GitHub Codespaces
 
-## Setting up a development environment
+First, create a Codespace on this repository. Click the green Code button, select Codespaces, and press "Create codespace on master". That's it! A dev environment will be set up for you automatically.
+
+For reference, this is the command used to run everything in Codespaces.
+
+```bash
+docker compose -f docker-compose-base.yaml -f docker-compose-codespaces.yaml up --force-recreate
+```
+
+## Setting up a development environment locally
 
 > [!NOTE]
 > These installation instructions are for local development only. They will not work on
@@ -49,10 +55,9 @@ Install Docker and clone this repository.
 
 Run:
 
-```
-cp docker-compose-dev.yaml compose.yml
-cp .env.template .env # Make sure to change the secret key to something random, otherwise containers might hang.
-docker-compose up
+```bash
+cp .env.template .env
+docker compose -f docker-compose-base.yaml -f docker-compose-dev.yaml up --force-recreate
 ```
 
 The environment will start.
