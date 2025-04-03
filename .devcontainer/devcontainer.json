@@ -1,0 +1,54 @@
+{
+  "postCreateCommand": "./codespaces-setup.sh",
+  "postAttachCommand": "docker compose -f docker-compose-base.yaml -f docker-compose-codespaces.yaml up --force-recreate",
+  "portsAttributes": {
+    "80": {
+      "label": "Dev Server",
+      "protocol": "http",
+      "onAutoForward": "openBrowserOnce"
+    },
+    "8080": {
+      "label": "Traefik Dashboard",
+      "protocol": "http",
+      "onAutoForward": "ignore"
+    },
+    "9702": {
+      "label": "pusher",
+      "protocol": "http",
+      "onAutoForward": "ignore"
+    },
+    "9706": {
+      "label": "ws server",
+      "protocol": "http",
+      "onAutoForward": "ignore"
+    },
+    "9711": {
+      "label": "vite frontend",
+      "protocol": "http",
+      "onAutoForward": "ignore"
+    },
+    "50051": {
+      "label": "GRPC API",
+      "protocol": "http",
+      "onAutoForward": "ignore"
+    }
+  },
+  // "forwardPorts": [ 80 ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "svelte.svelte-vscode",
+        "ms-azuretools.vscode-docker",
+        "ms-vscode-remote.remote-containers",
+        "Github.copilot",
+        "GitHub.copilot-chat",
+        "timonwong.shellcheck"
+      ]
+    },
+    "codespaces": {
+      "openFiles": [
+        "CODESPACES.md"
+      ]
+    }
+  }
+}

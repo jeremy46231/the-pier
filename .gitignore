@@ -8,10 +8,11 @@ maps/yarn.lock
 maps/dist/computer.js
 maps/dist/computer.js.map
 node_modules
+bun.lock
 _
 *.code-workspace
 /install.lock
-.vscode/extensions.json
+**/dist/*
 
 # Helm
 # Chart dependencies
@@ -24,8 +25,4 @@ synapse/homeserver.db-*
 synapse/homeserver.yaml
 synapse/media_store/*
 
-.vscode/settings.json
-
-compose.yml
-docker-compose.yaml
-docker-compose.yml
+CODESPACES.md

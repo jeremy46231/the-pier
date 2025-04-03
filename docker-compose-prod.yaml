@@ -1,11 +1,12 @@
 version: "3.6"
 services:
   reverse-proxy:
-    image: traefik:v2.11
+    image: traefik:v3.3.5
     command:
       - --log.level=${LOG_LEVEL}
       - --providers.docker
       - --providers.docker.exposedbydefault=false
+      - --api=true
       # Entry points
       - --entryPoints.web.address=:80
       - --entrypoints.web.http.redirections.entryPoint.to=websecure
@@ -30,183 +31,228 @@ services:
     networks:
       traefik:
     labels:
+      - "traefik.enable=true"
       - "traefik.http.routers.redirect-router.entrypoints=websecure"
       - "traefik.http.routers.redirect-router.rule=Host(`the-pier.hackclub.com`)"
       - "traefik.http.routers.redirect-router.middlewares=redirect-regex"
       - "traefik.http.middlewares.redirect-regex.redirectregex.regex=^https://the-pier\\.hackclub\\.com(/.*)?$"
       - "traefik.http.middlewares.redirect-regex.redirectregex.replacement=https://pier.hackclub.com"
       - "traefik.http.middlewares.redirect-regex.redirectregex.permanent=true"
+      - "traefik.http.routers.dashboard.rule=Host(`jitsi.the-pier.hackclub.com`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.users=user:$$apr1$$zcqUeLJI$$0iaoxy1JwLlNV/d.z/5xh."
 
   play:
     image: thecodingmachine/workadventure-play:${VERSION}
+    #build:
+    #  context: ./
+    #  dockerfile: play/Dockerfile
     environment:
-      - DEBUG_MODE
-      - JITSI_URL
-      - JITSI_PRIVATE_MODE
-      - ENABLE_MAP_EDITOR
-      - MAP_EDITOR_ALLOWED_USERS
-      - PUSHER_URL=https://${DOMAIN}/
-      - ICON_URL=/icon
-      - TURN_SERVER
-      - TURN_USER
-      - TURN_PASSWORD
-      - TURN_STATIC_AUTH_SECRET
-      - STUN_SERVER
-      - SKIP_RENDER_OPTIMIZATIONS
-      - MAX_PER_GROUP
-      - MAX_USERNAME_LENGTH
-      - DISABLE_ANONYMOUS
-      - DISABLE_NOTIFICATIONS
-      - SECRET_KEY
-      - API_URL=back:50051
-      - FRONT_URL=/
-      - INTERNAL_MAP_STORAGE_URL=http://map-storage:3000
-      - PUBLIC_MAP_STORAGE_URL=https://${DOMAIN}/map-storage
-      - START_ROOM_URL
-      - OPID_PROMPT=login
-      - OPID_WOKA_NAME_POLICY
-      - OPID_CLIENT_ID
-      - OPID_CLIENT_SECRET
-      - OPID_CLIENT_ISSUER
-      - OPID_PROFILE_SCREEN_PROVIDER
-      - OPID_SCOPE
-      - OPID_USERNAME_CLAIM
-      - OPID_LOCALE_CLAIM
-      - OPID_LOGOUT_REDIRECT_URL
-      - FALLBACK_LOCALE
-      - ENABLE_CHAT
-      - ENABLE_CHAT_UPLOAD
-      - ENABLE_CHAT_ONLINE_LIST
-      - ENABLE_CHAT_DISCONNECTED_LIST
-      - UPLOADER_URL=/uploader
-      # Report issues menu
-      - ENABLE_REPORT_ISSUES_MENU=${ENABLE_REPORT_ISSUES_MENU}
-      - REPORT_ISSUES_URL=${REPORT_ISSUES_URL}
-      - ENABLE_OPENAPI_ENDPOINT=true
-      - ADMIN_API_TOKEN
-      - ADMIN_API_URL
-      - ADMIN_URL
-      - ROOM_API_PORT=50051
-      - ROOM_API_SECRET_KEY=${ROOM_API_SECRET_KEY}
-      - GRPC_VERBOSITY=ERROR
-      - GRPC_TRACE=all
-      - SENTRY_ORG=${SENTRY_ORG}
-      - SENTRY_PROJECT=${SENTRY_PROJECT}
-      - SENTRY_DSN_FRONT=${SENTRY_DSN_FRONT}
-      - SENTRY_DSN_PUSHER=${SENTRY_DSN_PUSHER}
-      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
-      - SENTRY_RELEASE=${SENTRY_RELEASE}
-      - SENTRY_TRACES_SAMPLE_RATE=${SENTRY_TRACES_SAMPLE_RATE}
-      - JITSI_DOMAIN
-      - JITSI_XMPP_DOMAIN
-      - JITSI_MUC_DOMAIN
-      - WOKA_SPEED
-      - FEATURE_FLAG_BROADCAST_AREAS=${FEATURE_FLAG_BROADCAST_AREAS}
-      # Tools integration
-      - KLAXOON_ENABLED=${KLAXOON_ENABLED}
-      - KLAXOON_CLIENT_ID=${KLAXOON_CLIENT_ID}
-      - YOUTUBE_ENABLED=${YOUTUBE_ENABLED}
-      - GOOGLE_DRIVE_ENABLED=${GOOGLE_DRIVE_ENABLED}
-      - GOOGLE_DOCS_ENABLED=${GOOGLE_DOCS_ENABLED}
-      - GOOGLE_SHEETS_ENABLED=${GOOGLE_SHEETS_ENABLED}
-      - GOOGLE_SLIDES_ENABLED=${GOOGLE_SLIDES_ENABLED}
-      - ERASER_ENABLED=${ERASER_ENABLED}
-      - EXCALIDRAW_ENABLED=${EXCALIDRAW_ENABLED}
-      - EXCALIDRAW_DOMAINS=${EXCALIDRAW_DOMAINS}
-      - EMBEDDED_DOMAINS_WHITELIST=${EMBEDDED_DOMAINS_WHITELIST}
-      - CARDS_ENABLED=${CARDS_ENABLED}
-      - PEER_VIDEO_LOW_BANDWIDTH=${PEER_VIDEO_LOW_BANDWIDTH}
-      - PEER_VIDEO_RECOMMENDED_BANDWIDTH=${PEER_VIDEO_RECOMMENDED_BANDWIDTH}
-      - PEER_SCREEN_SHARE_LOW_BANDWIDTH=${PEER_SCREEN_SHARE_LOW_BANDWIDTH}
-      - PEER_SCREEN_SHARE_RECOMMENDED_BANDWIDTH=${PEER_SCREEN_SHARE_RECOMMENDED_BANDWIDTH}
-      # Google drive picker
-      - GOOGLE_DRIVE_PICKER_CLIENT_ID=${GOOGLE_DRIVE_PICKER_CLIENT_ID}
-      - GOOGLE_DRIVE_PICKER_APP_ID=${GOOGLE_DRIVE_PICKER_APP_ID}
-      - MAP_STORAGE_API_TOKEN=${MAP_STORAGE_API_TOKEN:-${SECRET_KEY}}
-      - MATRIX_API_URI
-      - MATRIX_PUBLIC_URI
-      - MATRIX_ADMIN_USER
-      - MATRIX_ADMIN_PASSWORD
-      - MATRIX_DOMAIN
+      # Differences from docker-compose-base.yaml
+      OPID_PROMPT: "login"
+      PUSHER_URL: "https://${DOMAIN}"
+      ICON_URL: "/icon"
+      FRONT_URL: "/"
+      PUBLIC_MAP_STORAGE_URL: "https://${DOMAIN}/map-storage"
+      UPLOADER_URL: "/uploader"
+
+      # The rest is the same as docker-compose-base.yaml
+      SERVER_NAME: "$SERVER_NAME"
+      SERVER_MOTD: "$SERVER_MOTD"
+      SERVER_ICON: "$SERVER_ICON"  
+      DEBUG_MODE: "$DEBUG_MODE"
+      FALLBACK_LOCALE: "$FALLBACK_LOCALE"
+      
+      # api
+      SECRET_KEY: "$SECRET_KEY"
+      API_URL: "back:50051"
+      ENABLE_OPENAPI_ENDPOINT: "true"
+      ADMIN_API_TOKEN: "$ADMIN_API_TOKEN"
+      ADMIN_API_URL: "$ADMIN_API_URL"
+      ADMIN_URL: "$ADMIN_URL"
+      ROOM_API_PORT: "50051"
+      ROOM_API_SECRET_KEY: "$ROOM_API_SECRET_KEY"
+      # gRPC
+      GRPC_VERBOSITY: "ERROR"
+      GRPC_TRACE: "all"
+      # maps
+      ENABLE_MAP_EDITOR: "$ENABLE_MAP_EDITOR"
+      MAP_EDITOR_ALLOWED_USERS: "$MAP_EDITOR_ALLOWED_USERS"
+      INTERNAL_MAP_STORAGE_URL: "http://map-storage:3000"
+      MAP_STORAGE_API_TOKEN: "${MAP_STORAGE_API_TOKEN:-${SECRET_KEY}}"
+      START_ROOM_URL: "$START_ROOM_URL"
+      # rendering
+      SKIP_RENDER_OPTIMIZATIONS: "$SKIP_RENDER_OPTIMIZATIONS"
+      MAX_PER_GROUP: "$MAX_PER_GROUP"
+      MAX_USERNAME_LENGTH: "$MAX_USERNAME_LENGTH"
+      DISABLE_ANONYMOUS: "$DISABLE_ANONYMOUS"
+      DISABLE_NOTIFICATIONS: "$DISABLE_NOTIFICATIONS"
+      WOKA_SPEED: "$WOKA_SPEED"
+      FEATURE_FLAG_BROADCAST_AREAS: "$FEATURE_FLAG_BROADCAST_AREAS"
+      # chat
+      ENABLE_CHAT: "$ENABLE_CHAT"
+      ENABLE_CHAT_UPLOAD: "$ENABLE_CHAT_UPLOAD"
+      ENABLE_CHAT_ONLINE_LIST: "$ENABLE_CHAT_ONLINE_LIST"
+      ENABLE_CHAT_DISCONNECTED_LIST: "$ENABLE_CHAT_DISCONNECTED_LIST"
+      # webRTC
+      TURN_SERVER: "$TURN_SERVER"
+      TURN_USER: "$TURN_USER"
+      TURN_PASSWORD: "$TURN_PASSWORD"
+      TURN_STATIC_AUTH_SECRET: "$TURN_STATIC_AUTH_SECRET"
+      STUN_SERVER: "$STUN_SERVER"
+      # bandwidth
+      PEER_VIDEO_LOW_BANDWIDTH: "$PEER_VIDEO_LOW_BANDWIDTH"
+      PEER_VIDEO_RECOMMENDED_BANDWIDTH: "$PEER_VIDEO_RECOMMENDED_BANDWIDTH"
+      PEER_SCREEN_SHARE_LOW_BANDWIDTH: "$PEER_SCREEN_SHARE_LOW_BANDWIDTH"
+      PEER_SCREEN_SHARE_RECOMMENDED_BANDWIDTH: "$PEER_SCREEN_SHARE_RECOMMENDED_BANDWIDTH"
+      # issue reporting
+      ENABLE_REPORT_ISSUES_MENU: "$ENABLE_REPORT_ISSUES_MENU"
+      REPORT_ISSUES_URL: "$REPORT_ISSUES_URL"
+      ACTIVE_REPORT_ISSUES_MENU: "true"
+      URL_REPORT_ISSUES: "https://github.com/hackclub/the-pier/issues"
+
+      # logging integration
+      LOGROCKET_ID: "$LOGROCKET_ID"
+      SENTRY_ORG: "$SENTRY_ORG"
+      SENTRY_PROJECT: "$SENTRY_PROJECT"
+      SENTRY_DSN_FRONT: "$SENTRY_DSN_FRONT"
+      SENTRY_DSN_PUSHER: "$SENTRY_DSN_PUSHER"
+      SENTRY_ENVIRONMENT: "$SENTRY_ENVIRONMENT"
+      SENTRY_RELEASE: "$SENTRY_RELEASE"
+      SENTRY_TRACES_SAMPLE_RATE: "$SENTRY_TRACES_SAMPLE_RATE"
+      # Jitsi
+      JITSI_URL: "$JITSI_URL"
+      JITSI_DOMAIN: "$JITSI_DOMAIN"
+      JITSI_XMPP_DOMAIN: "$JITSI_XMPP_DOMAIN"
+      JITSI_MUC_DOMAIN: "$JITSI_MUC_DOMAIN"
+      JITSI_PRIVATE_MODE: "$JITSI_PRIVATE_MODE"
+      # Matrix
+      MATRIX_API_URI: "$MATRIX_API_URI"
+      MATRIX_PUBLIC_URI: "$MATRIX_PUBLIC_URI"
+      MATRIX_ADMIN_USER: "$MATRIX_ADMIN_USER"
+      MATRIX_ADMIN_PASSWORD: "$MATRIX_ADMIN_PASSWORD"
+      MATRIX_DOMAIN: "$MATRIX_DOMAIN"
+      # OpenID
+      OPID_WOKA_NAME_POLICY: "$OPID_WOKA_NAME_POLICY"
+      OPID_CLIENT_ID: "$OPID_CLIENT_ID"
+      OPID_CLIENT_SECRET: "$OPID_CLIENT_SECRET"
+      OPID_CLIENT_ISSUER: "$OPID_CLIENT_ISSUER"
+      OPID_PROFILE_SCREEN_PROVIDER: "$OPID_PROFILE_SCREEN_PROVIDER"
+      OPID_SCOPE: "$OPID_SCOPE"
+      OPID_USERNAME_CLAIM: "$OPID_USERNAME_CLAIM"
+      OPID_LOCALE_CLAIM: "$OPID_LOCALE_CLAIM"
+      OPID_LOGOUT_REDIRECT_URL: "$OPID_LOGOUT_REDIRECT_URL"
+      # oEmbed
+      EMBEDLY_KEY: "$EMBEDLY_KEY"
+      IFRAMELY_KEY: "$IFRAMELY_KEY"
+      # tools
+      KLAXOON_ENABLED: "$KLAXOON_ENABLED"
+      KLAXOON_CLIENT_ID: "$KLAXOON_CLIENT_ID"
+      YOUTUBE_ENABLED: "$YOUTUBE_ENABLED"
+      GOOGLE_DRIVE_ENABLED: "$GOOGLE_DRIVE_ENABLED"
+      GOOGLE_DRIVE_PICKER_CLIENT_ID: "$GOOGLE_DRIVE_PICKER_CLIENT_ID"
+      GOOGLE_DRIVE_PICKER_APP_ID: "$GOOGLE_DRIVE_PICKER_APP_ID"
+      GOOGLE_DOCS_ENABLED: "$GOOGLE_DOCS_ENABLED"
+      GOOGLE_SHEETS_ENABLED: "$GOOGLE_SHEETS_ENABLED"
+      GOOGLE_SLIDES_ENABLED: "$GOOGLE_SLIDES_ENABLED"
+      ERASER_ENABLED: "$ERASER_ENABLED"
+      EXCALIDRAW_ENABLED: "$EXCALIDRAW_ENABLED"
+      EXCALIDRAW_DOMAINS: "$EXCALIDRAW_DOMAINS"
+      EMBEDDED_DOMAINS_WHITELIST: "$EMBEDDED_DOMAINS_WHITELIST"
+      CARDS_ENABLED: "$CARDS_ENABLED"
     networks:
       traefik:
     labels:
-      traefik.enable: "true"
+      - traefik.enable=true
 
-      traefik.http.routers.play.rule: "Host(`${DOMAIN}`) && PathPrefix(`/`)"
-      traefik.http.routers.play.entryPoints: "web"
-      traefik.http.services.play.loadbalancer.server.port: "3000"
+      - traefik.http.routers.play.rule=Host(`${DOMAIN}`) && PathPrefix(`/`)
+      - traefik.http.routers.play.entryPoints=web
+      - traefik.http.services.play.loadbalancer.server.port=3000
 
-      traefik.http.routers.play-ssl.rule: "Host(`${DOMAIN}`) && PathPrefix(`/`)"
-      traefik.http.routers.play-ssl.entryPoints: "websecure"
-      traefik.http.routers.play-ssl.tls: "true"
-      traefik.http.routers.play-ssl.tls.certresolver: "myresolver"
-      traefik.http.routers.play-ssl.service: "play"
+      - traefik.http.routers.play-ssl.rule=Host(`${DOMAIN}`) && PathPrefix(`/`)
+      - traefik.http.routers.play-ssl.entryPoints=websecure
+      - traefik.http.routers.play-ssl.tls=true
+      - traefik.http.routers.play-ssl.tls.certresolver=myresolver
+      - traefik.http.routers.play-ssl.service=play
 
-      traefik.http.routers.play-ws.rule: "Host(`${DOMAIN}`) && PathPrefix(`/ws/`)"
-      traefik.http.routers.play-ws.entryPoints: "web"
-      traefik.http.services.play-ws.loadbalancer.server.port: "3001"
+      - traefik.http.routers.play-ws.rule=Host(`${DOMAIN}`) && PathPrefix(`/ws/`)
+      - traefik.http.routers.play-ws.entryPoints=web
+      - traefik.http.services.play-ws.loadbalancer.server.port=3001
 
-      traefik.http.routers.play-ws-ssl.rule: "Host(`${DOMAIN}`) && PathPrefix(`/ws/`)"
-      traefik.http.routers.play-ws-ssl.entryPoints: "websecure"
-      traefik.http.routers.play-ws-ssl.tls: "true"
-      traefik.http.routers.play-ws-ssl.tls.certresolver: "myresolver"
-      traefik.http.routers.play-ws-ssl.service: "play-ws"
+      - traefik.http.routers.play-ws-ssl.rule=Host(`${DOMAIN}`) && PathPrefix(`/ws/`)
+      - traefik.http.routers.play-ws-ssl.entryPoints=websecure
+      - traefik.http.routers.play-ws-ssl.tls=true
+      - traefik.http.routers.play-ws-ssl.tls.certresolver=myresolver
+      - traefik.http.routers.play-ws-ssl.service=play-ws
 
-      traefik.http.routers.room-api.rule: "Host(`${DOMAIN}`)"
-      traefik.http.routers.room-api.entryPoints: "grpc"
-      traefik.http.routers.room-api.service: "room-api"
-      traefik.http.services.room-api.loadbalancer.server.port: "50051"
-      traefik.http.services.room-api.loadbalancer.server.scheme: "h2c"
-      traefik.http.routers.room-api.tls: "true"
-      traefik.http.routers.room-api.tls.certresolver: "myresolver"
+      - traefik.http.routers.room-api.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.room-api.entryPoints=grpc
+      - traefik.http.routers.room-api.service=room-api
+      - traefik.http.services.room-api.loadbalancer.server.port=50051
+      - traefik.http.services.room-api.loadbalancer.server.scheme=h2c
+      - traefik.http.routers.room-api.tls=true
+      - traefik.http.routers.room-api.tls.certresolver=myresolver
     restart: ${RESTART_POLICY}
+
   back:
     image: thecodingmachine/workadventure-back:${VERSION}
     networks:
       traefik:
     environment:
-      - PLAY_URL=https://${DOMAIN}
-      - SECRET_JITSI_KEY
-      - ENABLE_MAP_EDITOR
-      - SECRET_KEY
-      - ADMIN_API_TOKEN
-      - ADMIN_API_URL
-      - TURN_SERVER
-      - TURN_USER
-      - TURN_PASSWORD
-      - TURN_STATIC_AUTH_SECRET
-      - STUN_SERVER
-      - JITSI_URL
-      - JITSI_ISS
-      - BBB_URL
-      - BBB_SECRET
-      - MAX_PER_GROUP
-      - STORE_VARIABLES_FOR_LOCAL_MAPS
-      - REDIS_HOST=redis
-      - PROMETHEUS_AUTHORIZATION_TOKEN
-      - MAP_STORAGE_URL=map-storage:50053
-      - INTERNAL_MAP_STORAGE_URL=http://map-storage:3000
-      - PUBLIC_MAP_STORAGE_URL=https://${DOMAIN}/map-storage
-      - PLAYER_VARIABLES_MAX_TTL
-      - ENABLE_CHAT
-      - ENABLE_CHAT_UPLOAD
-      - SENTRY_DSN=${SENTRY_DSN_BACK}
-      - SENTRY_RELEASE=${SENTRY_RELEASE}
-      - SENTRY_TRACES_SAMPLE_RATE=${SENTRY_TRACES_SAMPLE_RATE}
+      # Differences from docker-compose-base.yaml
+      PLAY_URL: "https://${DOMAIN}"
+      PUBLIC_MAP_STORAGE_URL: "https://${DOMAIN}/map-storage"
+
+      # auth
+      SECRET_KEY: "$SECRET_KEY"
+      ADMIN_API_TOKEN: "$ADMIN_API_TOKEN"
+      ADMIN_API_URL: "$ADMIN_API_URL"
+      REDIS_HOST: "redis"
+      PROMETHEUS_AUTHORIZATION_TOKEN: "$PROMETHEUS_AUTHORIZATION_TOKEN"
+      # webRTC
+      TURN_SERVER: "$TURN_SERVER"
+      TURN_USER: "$TURN_USER"
+      TURN_PASSWORD: "$TURN_PASSWORD"
+      TURN_STATIC_AUTH_SECRET: "$TURN_STATIC_AUTH_SECRET"
+      STUN_SERVER: "$STUN_SERVER"
+      # maps
+      ENABLE_MAP_EDITOR: "$ENABLE_MAP_EDITOR"
+      STORE_VARIABLES_FOR_LOCAL_MAPS: "$STORE_VARIABLES_FOR_LOCAL_MAPS"
+      MAP_STORAGE_URL: "map-storage:50053"
+      INTERNAL_MAP_STORAGE_URL: "http://map-storage:3000"
+      PLAYER_VARIABLES_MAX_TTL: "$PLAYER_VARIABLES_MAX_TTL"
+      # chat
+      ENABLE_CHAT: "$ENABLE_CHAT"
+      ENABLE_CHAT_UPLOAD: "$ENABLE_CHAT_UPLOAD"
+      # jitsi
+      SECRET_JITSI_KEY: "$SECRET_JITSI_KEY"
+      JITSI_URL: "$JITSI_URL"
+      JITSI_ISS: "$JITSI_ISS"
+      # bigbluebutton
+      BBB_URL: "$BBB_URL"
+      BBB_SECRET: "$BBB_SECRET"
+      # sentry
+      SENTRY_DSN: "$SENTRY_DSN_BACK"
+      SENTRY_ENVIRONMENT: "$SENTRY_ENVIRONMENT"
+      SENTRY_RELEASE: "$SENTRY_RELEASE"
+      SENTRY_TRACES_SAMPLE_RATE: "$SENTRY_TRACES_SAMPLE_RATE"
+
+      MAX_PER_GROUP: "$MAX_PER_GROUP"
+      ALLOW_ARTILLERY: "true"
     labels:
-      traefik.enable: "true"
-      traefik.http.middlewares.strip-api-prefix.stripprefix.prefixes: "/api"
-      traefik.http.routers.back.rule: "Host(`${DOMAIN}`) && PathPrefix(`/api`)"
-      traefik.http.routers.back.middlewares: "strip-api-prefix@docker"
-      traefik.http.routers.back.entryPoints: "web"
-      traefik.http.services.back.loadbalancer.server.port: "8080"
-      traefik.http.routers.back-ssl.middlewares: "strip-api-prefix@docker"
-      traefik.http.routers.back-ssl.rule: "Host(`${DOMAIN}`) && PathPrefix(`/api`)"
-      traefik.http.routers.back-ssl.entryPoints: "websecure"
-      traefik.http.routers.back-ssl.service: "back"
-      traefik.http.routers.back-ssl.tls: "true"
-      traefik.http.routers.back-ssl.tls.certresolver: "myresolver"
+      - traefik.enable=true
+      - traefik.http.middlewares.strip-api-prefix.stripprefix.prefixes=/api
+      - traefik.http.routers.back.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)
+      - traefik.http.routers.back.middlewares=strip-api-prefix@docker
+      - traefik.http.routers.back.entryPoints=web
+      - traefik.http.services.back.loadbalancer.server.port=8080
+      - traefik.http.routers.back-ssl.middlewares=strip-api-prefix@docker
+      - traefik.http.routers.back-ssl.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)
+      - traefik.http.routers.back-ssl.entryPoints=websecure
+      - traefik.http.routers.back-ssl.service=back
+      - traefik.http.routers.back-ssl.tls=true
+      - traefik.http.routers.back-ssl.tls.certresolver=myresolver
     restart: ${RESTART_POLICY}
 
   uploader:
@@ -214,34 +260,38 @@ services:
     networks:
       traefik:
     environment:
-      - UPLOADER_URL=https://${DOMAIN}/uploader
-      #AWS
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
-      - AWS_BUCKET=${AWS_BUCKET}
-      - AWS_URL=${AWS_URL}
-      - AWS_ENDPOINT=${AWS_ENDPOINT}
-      #REDIS
-      - REDIS_HOST=${UPLOADER_REDIS_HOST}
-      - REDIS_PORT=${UPLOADER_REDIS_PORT}
-      #CHAT
-      - ADMIN_API_URL=${ADMIN_API_URL}
-      - ENABLE_CHAT_UPLOAD=${ENABLE_CHAT_UPLOAD}
-      - UPLOAD_MAX_FILESIZE=${UPLOAD_MAX_FILESIZE}
+      # Difference from docker-compose-base.yaml
+      UPLOADER_URL: "https://${DOMAIN}/uploader"
+
+      # aws
+      AWS_ACCESS_KEY_ID: "$AWS_ACCESS_KEY_ID"
+      AWS_SECRET_ACCESS_KEY: "$AWS_SECRET_ACCESS_KEY"
+      AWS_DEFAULT_REGION: "$AWS_DEFAULT_REGION"
+      AWS_BUCKET: "$AWS_BUCKET"
+      AWS_URL: "$AWS_URL"
+      AWS_ENDPOINT: "$AWS_ENDPOINT"
+      UPLOADER_AWS_SIGNED_URL_EXPIRATION: "$UPLOADER_AWS_SIGNED_URL_EXPIRATION"
+      # redis
+      REDIS_HOST: "$UPLOADER_REDIS_HOST"
+      REDIS_PORT: "$UPLOADER_REDIS_PORT"
+      REDIS_DB_NUMBER: "$UPLOADER_REDIS_DB_NUMBER"
+      # chat
+      ADMIN_API_URL: "$ADMIN_API_URL"
+      ENABLE_CHAT_UPLOAD: "$ENABLE_CHAT_UPLOAD"
+      UPLOAD_MAX_FILESIZE: "$UPLOAD_MAX_FILESIZE"
     labels:
-      traefik.enable: "true"
-      traefik.http.middlewares.strip-uploader-prefix.stripprefix.prefixes: "/uploader"
-      traefik.http.routers.uploader.rule: "Host(`${DOMAIN}`) && PathPrefix(`/uploader`)"
-      traefik.http.routers.uploader.middlewares: "strip-uploader-prefix@docker"
-      traefik.http.routers.uploader.entryPoints: "web"
-      traefik.http.services.uploader.loadbalancer.server.port: "8080"
-      traefik.http.routers.uploader-ssl.middlewares: "strip-uploader-prefix@docker"
-      traefik.http.routers.uploader-ssl.rule: "Host(`${DOMAIN}`) && PathPrefix(`/uploader`)"
-      traefik.http.routers.uploader-ssl.entryPoints: "websecure"
-      traefik.http.routers.uploader-ssl.service: "uploader"
-      traefik.http.routers.uploader-ssl.tls: "true"
-      traefik.http.routers.uploader-ssl.tls.certresolver: "myresolver"
+      - traefik.enable=true
+      - traefik.http.middlewares.strip-uploader-prefix.stripprefix.prefixes=/uploader
+      - traefik.http.routers.uploader.rule=Host(`${DOMAIN}`) && PathPrefix(`/uploader`)
+      - traefik.http.routers.uploader.middlewares=strip-uploader-prefix@docker
+      - traefik.http.routers.uploader.entryPoints=web
+      - traefik.http.services.uploader.loadbalancer.server.port=8080
+      - traefik.http.routers.uploader-ssl.middlewares=strip-uploader-prefix@docker
+      - traefik.http.routers.uploader-ssl.rule=Host(`${DOMAIN}`) && PathPrefix(`/uploader`)
+      - traefik.http.routers.uploader-ssl.entryPoints=websecure
+      - traefik.http.routers.uploader-ssl.service=uploader
+      - traefik.http.routers.uploader-ssl.tls=true
+      - traefik.http.routers.uploader-ssl.tls.certresolver=myresolver
     restart: ${RESTART_POLICY}
 
   icon:
@@ -249,18 +299,18 @@ services:
     networks:
       traefik:
     labels:
-      traefik.enable: "true"
-      traefik.http.middlewares.strip-icon-prefix.stripprefix.prefixes: "/icon"
-      traefik.http.routers.icon.middlewares: "strip-icon-prefix@docker"
-      traefik.http.routers.icon.rule: "Host(`${DOMAIN}`) && PathPrefix(`/icon`)"
-      traefik.http.routers.icon.entryPoints: "web"
-      traefik.http.services.icon.loadbalancer.server.port: "8080"
-      traefik.http.routers.icon-ssl.middlewares: "strip-icon-prefix@docker"
-      traefik.http.routers.icon-ssl.rule: "Host(`${DOMAIN}`) && PathPrefix(`/icon`)"
-      traefik.http.routers.icon-ssl.entryPoints: "websecure"
-      traefik.http.routers.icon-ssl.service: "icon"
-      traefik.http.routers.icon-ssl.tls: "true"
-      traefik.http.routers.icon-ssl.tls.certresolver: "myresolver"
+      - traefik.enable=true
+      - traefik.http.middlewares.strip-icon-prefix.stripprefix.prefixes=/icon
+      - traefik.http.routers.icon.middlewares=strip-icon-prefix@docker
+      - traefik.http.routers.icon.rule=Host(`${DOMAIN}`) && PathPrefix(`/icon`)
+      - traefik.http.routers.icon.entryPoints=web
+      - traefik.http.services.icon.loadbalancer.server.port=8080
+      - traefik.http.routers.icon-ssl.middlewares=strip-icon-prefix@docker
+      - traefik.http.routers.icon-ssl.rule=Host(`${DOMAIN}`) && PathPrefix(`/icon`)
+      - traefik.http.routers.icon-ssl.entryPoints=websecure
+      - traefik.http.routers.icon-ssl.service=icon
+      - traefik.http.routers.icon-ssl.tls=true
+      - traefik.http.routers.icon-ssl.tls.certresolver=myresolver
     restart: ${RESTART_POLICY}
 
   redis:
@@ -276,8 +326,11 @@ services:
     networks:
       traefik:
     environment:
+      # api
       API_URL: back:50051
-      PROMETHEUS_AUTHORIZATION_TOKEN: "$PROMETHEUS_AUTHORIZATION_TOKEN"
+      PUSHER_URL: "https://${DOMAIN}/"
+      MAP_STORAGE_API_TOKEN: "${MAP_STORAGE_API_TOKEN:-${SECRET_KEY}}"
+      # auth
       AUTHENTICATION_STRATEGY: "$MAP_STORAGE_AUTHENTICATION_STRATEGY"
       ENABLE_BEARER_AUTHENTICATION: "$MAP_STORAGE_ENABLE_BEARER_AUTHENTICATION"
       ENABLE_BASIC_AUTHENTICATION: "$MAP_STORAGE_ENABLE_BASIC_AUTHENTICATION"
@@ -286,14 +339,15 @@ services:
       AUTHENTICATION_PASSWORD: "$MAP_STORAGE_AUTHENTICATION_PASSWORD"
       AUTHENTICATION_TOKEN: "$MAP_STORAGE_AUTHENTICATION_TOKEN"
       AUTHENTICATION_VALIDATOR_URL: "$MAP_STORAGE_AUTHENTICATION_VALIDATOR_URL"
+      # storage
+      PATH_PREFIX: "/map-storage"
+      ENTITY_COLLECTION_URLS: "https://${DOMAIN}/collections/FurnitureCollection.json,https://${DOMAIN}/collections/OfficeCollection.json"
+      # integration
       SENTRY_DSN: $SENTRY_DSN_MAPSTORAGE
       SENTRY_RELEASE: $SENTRY_RELEASE
       SENTRY_ENVIRONMENT: $SENTRY_ENVIRONMENT
       SENTRY_TRACES_SAMPLE_RATE: $SENTRY_TRACES_SAMPLE_RATE
-      PATH_PREFIX: "/map-storage"
-      ENTITY_COLLECTION_URLS: "https://${DOMAIN}/collections/FurnitureCollection.json,https://${DOMAIN}/collections/OfficeCollection.json"
-      MAP_STORAGE_API_TOKEN: "${MAP_STORAGE_API_TOKEN:-${SECRET_KEY}}"
-      PUSHER_URL: "https://${DOMAIN}/"
+      PROMETHEUS_AUTHORIZATION_TOKEN: "$PROMETHEUS_AUTHORIZATION_TOKEN"
     volumes:
       - map-storage-data:/maps
     labels:
