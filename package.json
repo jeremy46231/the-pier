@@ -5,12 +5,13 @@
     "husky": "^7.0.1"
   },
   "scripts": {
-    "prepare": "husky install || echo 'Husky not found. Maybe you are installing only a subproject.'"
+    "install-precommit": "husky install || echo 'Husky not found. Maybe you are installing only a subproject.'"
   },
   "workspaces": [
     "play",
     "back",
     "map-storage",
+    "messages",
     "libs/*",
     "benchmark",
     "uploader",
